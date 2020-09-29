@@ -2,118 +2,156 @@
 Created on September 12, 2020
 Author: Richard Punt
 Version: Python 3.8
-Description: Executes Graph class
 
 """
-
 import sys
 from PyQt5.Qt import *
-from pathlib import Path
-from Graph import *
+from Crypto import *
+from itertools import *
 
 
-class FlightPathWidget(QWidget):
+class CryptoWidget(QWidget):
 
+    # Constructor
     def __init__(self):
-
         # Inherit QWidget properties and initiate the program
-        super(FlightPathWidget, self).__init__()
+        super(CryptoWidget, self).__init__()
         self.initUI()
 
     def initUI(self):
-
-        # Create an instance of the graph class
-        file_path = Path('C:/Users/Richa/Desktop/Python/Assignment 6/Input/RawData_update3.xlsx')
-        self.g = Graph(file_path, 'Graph.db')
+        # Create an instance of the Crypto class
+        self.c = Crypto()
 
         # Window properties
-        self.resize(585, 420)
-        self.setWindowTitle('Flight Path Widget')
+        self.resize(970, 580)
+        self.setWindowTitle('Crypto Tool')
         self.qr = self.frameGeometry()
         self.cp = QDesktopWidget().availableGeometry().center()
         self.qr.moveCenter(self.cp)
         self.move(self.qr.topLeft())
 
         # Widget properties
-        self.label_departure = QLabel('Departure:', self)
-        self.combo_box_departure = QComboBox(self)
-        self.combo_box_departure.addItem("")
-        self.combo_box_departure.addItems(self.g.get_airports())
-        self.label_destination = QLabel('Destination:', self)
-        self.combo_box_destination = QComboBox(self)
-        self.combo_box_destination.addItem("")
-        self.combo_box_destination.addItems(self.g.get_airports())
-        self.button_search = QPushButton('Search', self)
-        self.button_search.clicked.connect(self.search_paths)
-        self.text_output = QTextEdit(self)
-        self.text_output.setReadOnly(True)
-        self.button_reset_view = QPushButton('Reset View', self)
-        self.button_reset_view.clicked.connect(self.text_output.clear)
+        self.label_key_file = QLabel('Key File', self)
+        self.button_key_file_generate = QPushButton('Generate', self)
+        self.button_key_file_generate.clicked.connect(self.generate_key_file)
+        self.text_line_key_file = QLineEdit(self)
+        self.text_line_key_file.setReadOnly(True)
+        self.text_line_key_file.selectionChanged.connect(lambda: self.text_line_key_file.setSelection(0, 0))
+        self.button_key_file_browse = QPushButton('Browse', self)
+        self.button_key_file_browse.clicked.connect(self.get_key_file)
+        self.label_source_file = QLabel('Source File', self)
+        self.text_line_source_file = QLineEdit(self)
+        self.button_source_file_browse = QPushButton('Browse', self)
+        self.button_source_file_browse.clicked.connect(self.get_source_file)
         self.insert_blank_line = QLabel('', self)
+        self.insert_blank_line.setFont(QFont('Arial', 5))
+        self.button_encode = QPushButton('Encode', self)
+        self.button_encode.clicked.connect(self.encode)
+        self.button_decode = QPushButton('Decode', self)
+        self.button_decode.clicked.connect(self.decode)
+        self.text_line_key = QLineEdit(self)
+        self.text_line_key.setReadOnly(True)
+        self.text_line_key.selectionChanged.connect(lambda: self.text_line_key.setSelection(0, 0))
+        self.text_line_input_text = QLineEdit('Input Text', self)
+        self.text_line_input_text.setReadOnly(True)
+        self.text_line_input_text.selectionChanged.connect(lambda: self.text_line_input_text.setSelection(0, 0))
+        self.text_input_text = QTextEdit(self)
+        self.text_input_text.setReadOnly(True)
+        self.text_line_output_text = QLineEdit('Output Text', self)
+        self.text_line_output_text.setReadOnly(True)
+        self.text_line_output_text.selectionChanged.connect(lambda: self.text_line_output_text.setSelection(0, 0))
+        self.text_output_text = QTextEdit(self)
+        self.text_output_text.setReadOnly(True)
 
         # Layout properties
         self.layout = QGridLayout()
-        self.layout.addWidget(self.label_departure, 0, 0, 1, 1)
-        self.layout.addWidget(self.combo_box_departure, 0, 1, 1, 3)
-        self.layout.addWidget(self.label_destination, 1, 0, 1, 1)
-        self.layout.addWidget(self.combo_box_destination, 1, 1, 1, 3)
-        self.layout.addWidget(self.insert_blank_line, 2, 0, 1, 1)
-        self.layout.addWidget(self.button_search, 3, 3, 1, 4)
-        self.layout.addWidget(self.insert_blank_line, 4, 0, 1, 1)
-        self.layout.addWidget(self.text_output, 5, 0, 1, 10)
-        self.layout.addWidget(self.insert_blank_line, 6, 0, 1, 1)
-        self.layout.addWidget(self.button_reset_view, 7, 3, 1, 4)
-        self.layout.addWidget(self.insert_blank_line, 8, 0, 1, 1)
+        self.layout.addWidget(self.label_key_file, 0, 0, 1, 2)
+        self.layout.addWidget(self.button_key_file_generate, 0, 2, 1, 1)
+        self.layout.addWidget(self.text_line_key_file, 0, 3, 1, 6)
+        self.layout.addWidget(self.button_key_file_browse, 0, 9, 1, 1)
+        self.layout.addWidget(self.label_source_file, 1, 0, 1, 3)
+        self.layout.addWidget(self.text_line_source_file, 1, 3, 1, 6)
+        self.layout.addWidget(self.button_source_file_browse, 1, 9, 1, 1)
+        self.layout.addWidget(self.insert_blank_line, 2, 0, 1, 5)
+        self.layout.addWidget(self.button_encode, 3, 0, 1, 5)
+        self.layout.addWidget(self.button_decode, 3, 5, 1, 5)
+        self.layout.addWidget(self.insert_blank_line, 4, 0, 1, 5)
+        self.layout.addWidget(self.text_line_key, 5, 0, 1, 10)
+        self.layout.addWidget(self.text_line_input_text, 6, 0, 1, 10)
+        self.layout.addWidget(self.text_input_text, 7, 0, 1, 10)
+        self.layout.addWidget(self.text_line_output_text, 8, 0, 1, 10)
+        self.layout.addWidget(self.text_output_text, 9, 0, 1, 10)
         self.setLayout(self.layout)
 
         # Show application
         self.show()
 
-    def search_paths(self):
+    def generate_key_file(self):
+        # Generate and set hex_key
+        hex_key = self.c.generate_key()
+        self.c.set_key(hex_key)
 
-        # Clear existing text output
-        self.text_output.clear()
+        # Create My_Key.txt to put hex_key in
+        f = open("My_Key.txt", "w+")
+        f.write(hex_key)
+        f.close()
 
-        # Determine current combo box departure and destination
-        departure = self.combo_box_departure.currentText()
-        destination = self.combo_box_destination.currentText()
+        # Display key and key file path
+        self.text_line_key.setText("Key: " + hex_key)
+        self.text_line_key_file.setText('C:\\Users\\Richa\\Desktop\\Python\\Final Project\\My_Key.txt')
 
-        # Test if combo boxes not filled out or if destination and departure are the same
-        if departure == "" or destination == "":
-            self.text_output.insertPlainText("Not applicable destination or departure")
-        elif departure == destination:
-            self.text_output.insertPlainText("Departure and destination cannot be the same")
-        else:
+    def get_key_file(self):
+        # Browse for key file
+        key_file_name = QFileDialog.getOpenFileName(self, 'Open file', 'C:\\Users\\Richa\\Desktop\\Python\\Final Project', "Text files (*.txt)")
+        self.text_line_key_file.setText(key_file_name[0])
 
-            # Obtain paths for departure and destination
-            paths = self.g.find_paths(departure, destination, departure)
+        # Display key and key file path and set hex_key
+        try:
+            key_file = open(key_file_name[0], 'r')
+            with key_file:
+                hex_key = key_file.read()
+                self.text_line_key.setText("Key: " + hex_key)
+            self.c.set_key(hex_key)
+        except FileNotFoundError:
+            pass
 
-            # Check if no paths exist
-            if paths == []:
-                self.text_output.insertPlainText("No paths exist")
-            else:
+    def get_source_file(self):
+        # Browse for source file
+        get_source_file = QFileDialog.getOpenFileName(self, 'Open file', 'C:\\Users\\Richa\\Desktop\\Python\\Final Project', "Text files (*.txt) ;; Enc files (*.enc)")
+        self.text_line_source_file.setText(get_source_file[0])
 
-                # Print out each path
-                for path in paths:
-                    path_string = "Path: " + path[1]
-                    for i in range(2, len(path)):
-                        if i % 2 == 0:
-                            path_string += " to " + path[i + 1] + " via " + path[i]
-                    self.text_output.insertPlainText(path_string + "\n")
+        # Display source text
+        try:
+            self.text_input_text.clear()
+            self.text_output_text.clear()
+            key_file = open(get_source_file[0], 'r')
+            with key_file:
+                data = key_file.read()
+                self.text_input_text.setText(data)
+        except FileNotFoundError:
+            pass
 
-                # Print out shortest path
-                shortest_path = self.g.find_shortest_path(departure, destination)
-                shortest_path_string = "\nThe shortest path is " + shortest_path[1]
-                for i in range(2, len(shortest_path)):
-                    if i % 2 == 0:
-                        shortest_path_string += " to " + shortest_path[i + 1] + " via " + shortest_path[i]
-                self.text_output.insertPlainText(shortest_path_string + ".")
+    def encode(self):
+        # Split input text into a list by \n
+        text = self.text_input_text.toPlainText().split('\n')
+
+        # Encode each line and display in output text
+        for line in text:
+            encrypt = self.c.encode(line)
+            self.text_output_text.append(encrypt.strip())
+
+    def decode(self):
+        # Split input text into a list
+        text = self.text_input_text.toPlainText().split()
+
+        # Decode each line and display in output text
+        for line in text:
+            decrypt = self.c.decode(line)
+            print(decrypt)
+            self.text_output_text.append(decrypt.strip())
 
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-    f = FlightPathWidget()
+    ex = CryptoWidget()
     sys.exit(app.exec_())
-
-
-
